@@ -1,0 +1,43 @@
+name: Cloud candidate monitor
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Read-only validation, same-list write test, or monitoring
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - verify-writer
+          - monitor
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cloud-candidate-monitor
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.event_name == 'workflow_dispatch' || vars.MONITOR_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out monitor
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Run cloud probes
+        env:
+          MONITOR_MODE: ${{ inputs.mode || 'monitor' }}
+          PREFERRED_FEED: ${{ secrets.PREFERRED_FEED }}
+          PROBE_TARGET: ${{ secrets.PROBE_TARGET }}
+          PUBLISH_KEY: ${{ secrets.PREFERRED_PUBLISH_KEY }}
+          CANDIDATE_SEEDS: ${{ secrets.CANDIDATE_SEEDS }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 cloud_probe.py "$MONITOR_MODE"
