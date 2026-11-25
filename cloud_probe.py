@@ -86,8 +86,8 @@ def valid_endpoint(candidate):
 def read_list(settings):
     _, data = get_url(settings.feed + '/ips.txt', limit=128)
     lines = data.decode('ascii').strip().splitlines()
-    if len(lines) != 2 or len(set(lines)) != 2 or not all(map(valid_endpoint, lines)):
-        raise ValueError('Expected exactly two valid Cloudflare endpoints')
+    if not 2 <= len(lines) <= 4 or len(set(lines)) != len(lines) or not all(map(valid_endpoint, lines)):
+        raise ValueError('Expected two to four valid Cloudflare endpoints')
     return lines
 
 
